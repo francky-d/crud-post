@@ -1,0 +1,47 @@
+services:
+  app:
+    build: 
+      context: .
+    container_name: app-container
+    volumes:
+      - ".:/app"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - myapp
+  db:
+    image: 'mysql/mysql-server:8.0'
+    container_name: db-container
+    ports:
+      - "33061:3306"
+    environment:
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_PASSWORD=${DB_PASSWORD}"
+      - "MYSQL_USER=${DB_USER}"
+      - "MYSQL_DATABASE=${DB_NAME}"
+    networks:
+      - myapp
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 45s
+      interval: 5s
+      retries: 10
+    volumes:
+      - ./docker-conf/mysql:/docker-entrypoint-initdb.d
+
+  phpmyadmin:
+      container_name: ""
+      image: 'phpmyadmin:latest'
+      ports:
+          - '8080:80'
+      networks:
+          - myapp
+      environment:
+          - PMA_ARBITRARY=1
+
+networks:
+  myapp:
+    driver: bridge
